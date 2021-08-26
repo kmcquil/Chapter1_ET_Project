@@ -1,0 +1,17 @@
+Data/coweeta/
+Data/forest_composition/
+Data/gis/
+Data/landcover/
+Data/Landsat_ET/
+Data/MODIS_ET/
+Data/NA_CEC_Eco_Level3/
+Data/SPI/
+Data/tl_2017_us_state/
+Data/Topography/
+Analysis/outputs/
+Visualizing/**/*.csv
+*.xlsx
+*.tif
+*.csv
+*.ini
+*.xml
