@@ -1,5 +1,11 @@
 Data/coweeta/
-Data/forest_composition/
+Data/forest_composition/*
+!Data/forest_composition/Wilson_FC_SBR
+Data/forest_composition/Wilson_FC_SBR/*
+!Data/forest_composition/Wilson_FC_SBR/FC_classification_sbr_wilson.R
+!Data/forest_composition/Riley_FC_SBR
+Data/forest_composition/Riley_FC_SBR/*
+!Data/forest_composition/Riley_FC_SBR/FC_classification_sbr_riley.R
 Data/gis/
 Data/landcover/
 Data/Landsat_ET/
