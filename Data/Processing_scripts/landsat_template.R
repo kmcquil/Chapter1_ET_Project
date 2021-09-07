@@ -1,8 +1,6 @@
 ################################################################################
-################################################################################
-## Create landsat ET template
+## Create landsat ET template to use to mosaic data onto a common grid 
 ## cropped to SBR ecoregion and crs = 32617
-################################################################################
 ################################################################################
 library(raster)
 library(data.table)
@@ -17,11 +15,9 @@ UseCores <- detectCores() -1
 cl <- makeCluster(UseCores)
 registerDoParallel(cl)
 
-# base directory
-home <- "G:/My Drive/Chapter1_ET_Project/Data"
+home <- "G:/My Drive/Chapter1_ET_Project/Data" # set home directory 
 
-# first create a template that will be used to resample thats based on all tiles 
-# included in the analysis 
+# first create a template that will be used to resample based on all landsat tiles used in the analysis 
 et_long <- list.files(paste0(home, "/Landsat_ET/original_data"), full.names = T)
 et_short <- list.files(paste0(home, "/Landsat_ET/original_data"), full.names = F)
 

@@ -1,5 +1,5 @@
 ########################################################################################
-## Drought analysis test on a small dataset 
+## Drought analysis on MODIS 
 ########################################################################################
 
 library(rgdal)
@@ -16,10 +16,6 @@ n = 20 # how many cores do i want
 ########################################################################################
 # Identify droughts and retrieve ET anomalies at drought peak 
 ########################################################################################
-
-# make sure to jsut delete spi files that are outside of the modis scope 
-# modis data is from 2000-01 : 2019-12
-
 # bring in SPI and ET files. 
 spi <- list.files(paste0(home, "/Data/SPI/SPI90_MODIS"), full.names=T, pattern = ".tif$") 
 spi_short <- list.files(paste0(home, "/Data/SPI/SPI90_MODIS"), full.names=F, pattern = ".tif$") 
@@ -36,6 +32,7 @@ files_dt <- merge(spi, et, by = 'date')
 years <- unique(year(files_dt$date))
 
 # only look in the growing season, so subset further from April (4) - September (9)
+# create rasters of SPI, ET anomalies, and the index at drought peak 
 for(i in 1:length(years)){
   y <- years[i]
   spi_sub <- files_dt[year(date) == y & month(date) >3 & month(date) < 10]$spi_file
@@ -43,7 +40,6 @@ for(i in 1:length(years)){
   
   droughtID(spi_sub, et_sub, n, home, y, "MODIS")
 }
-
 print("The drought peak rasters have been created!")
 
 ########################################################################################
@@ -88,6 +84,7 @@ UseCores <- n
 cl <- makeCluster(UseCores)
 registerDoParallel(cl)
 
+# each row is a pixel 
 foreach(i = 1:nrow(peak_dt))%dopar%{
   library(data.table)
   library(raster)

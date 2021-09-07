@@ -1,11 +1,11 @@
 ############################################################################################
-## resample forest cover masks to match landsat and modis 
+## Resample forest cover masks to match landsat and modis 
 ############################################################################################
 library(raster)
 library(rgdal)
 library(gdalUtils)
 
-home <- "G:/My Drive/Chapter1_ET_Project/Data" # base directory
+home <- "G:/My Drive/Chapter1_ET_Project/Data" # set home directory
 source(paste0(home, "/Processing_scripts/helpers.R")) # source a helper function 
 
 roi <- paste0(home, "/NA_CEC_Eco_Level3/blue_ridge.shp") # bring in the roi path 
@@ -17,7 +17,7 @@ forest_mask_modis <- paste0(home, "/landcover/MODIS_FOREST/modis_permanent_fores
 fout <- paste0(home, "/landcover/MODIS_FOREST/modis_permanent_forest_resampled.tif")
 warpMn(forest_mask_modis, modis_template, fout, 'bilinear')
 r <- raster(fout)
-r <- mask(r, roi_mask)
+r <- mask(r, roi_mask) # mask to the ROI
 writeRaster(r, fout, overwrite = T)
 
 

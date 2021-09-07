@@ -1,5 +1,7 @@
 ##############################################################################################
 ## Landsat drought peak calcs part 4
+## Create overall DTs for SPI, ET anomalies, and ET residuals where each row corresponds to 
+## a cell number and each column is a year and the last column is the mean 
 ##############################################################################################
 library(rgdal)
 library(raster)

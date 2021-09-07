@@ -11,9 +11,9 @@ library(parallel)
 library(snow)
 
 home <- "/share/klmarti3/kmcquil/Chapter1_ET_Project"
-#home <- "G:/My Drive/Chapter1_ET_Project"
 source(paste0(home, "/Analysis/scripts/analysis_funcs.R"))
 
+# start an rmpi cluster
 workers <- mpi.universe.size() -1
 cl <- makeMPIcluster(workers, type='MPI')
 

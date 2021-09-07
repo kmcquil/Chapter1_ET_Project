@@ -1,41 +1,19 @@
 ##########################################################################
 ##########################################################################
-## Random functions that are helpful for geoprocessing or analysis 
+## Functions used in data preparation 
 ##########################################################################
 ##########################################################################
 
-
-## resample a raster that's already read in using gdalWarp 
-## provide another raster for the paramters you want to resample to 
-warp <- function(fin, template, fout, roi, nodata){
-  
-  res <- res(template)
-  t1 <- c(xmin(template), ymin(template), 
-          xmax(template), ymax(template))
-  res_out <- crs(template)
-  
-  gdalwarp(fin, fout, t_srs=res_out, tr=res, te=t1, r='near', 
-           cutline = roi, 
-           crop_to_cutline = T, 
-           dstnodata = nodata,
-           overwrite = T)
-}
-
-
-warpM <- function(fin, template, fout, roi, nodata, re){
-  
-  res <- res(template)
-  t1 <- c(xmin(template), ymin(template), 
-          xmax(template), ymax(template))
-  res_out <- crs(template)
-  
-  gdalwarp(fin, fout, t_srs=res_out, tr=res, te=t1, r=re, 
-           cutline = roi, 
-           crop_to_cutline = T, 
-           dstnodata = nodata,
-           overwrite = T)
-}
-
+###########################################################################
+## Resample a raster to match another rasters resolution, extent, and crs
+## Input: 
+#### fin: the filepath of the raster to be resampled 
+#### template: the raster (read in) to serve as the template 
+#### fout: the filepath to write the new resampled raster to 
+#### re: resample method to be used. Use the same names as rgdal
+## Output: 
+#### a resampled raster that matches the template 
+#############################################################################
 warpMn <- function(fin, template, fout,re){
   
   res <- res(template)
@@ -47,11 +25,14 @@ warpMn <- function(fin, template, fout,re){
 }
 
 
-
-
-
-## function to calcualte the long term mean and sd of a bunch of rasters 
-## input is the tile ID 
+###########################################################################
+## Calculate the monthly long term mean and standard deviation on a specified raster tile
+## Input: 
+#### TD: the tile ID 
+## Output: 
+##### Write out the long term mean raster for each month for the given tile
+##### Write out the long term standard deviation raster for each month for the given tile 
+#############################################################################
 LTs <- function(TD){
   tile_dt <- file_dt[tile == TD]
   

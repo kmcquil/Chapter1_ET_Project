@@ -1,9 +1,7 @@
-#########################################################################
-## Calculate MODIS ET anomalies 
-#########################################################################
-# because the modis product is totaled every 8 days, it is hard to find the total monthly ET because 30/8 doesn't really work 
-# since we will be standardizing (z-score) anomalies, I will just find the average 8 day total that starts in each month 
-
+################################################################################################
+## Calculate MODIS ET long term mean and SD of average monthly ET rate
+## average monthly ET rate and z-score seaasonally standardized anomalies  
+################################################################################################
 library(raster)
 library(data.table)
 library(rgdal)
@@ -13,9 +11,9 @@ library(foreach)
 library(doParallel)
 library(lubridate)
 
-home <- "G:/My Drive/Chapter1_ET_Project/Data"
 home <- "/share/klmarti3/kmcquil/Chapter1_ET_Project/Data"
 
+# create a DT of files with the date to easily subset files for anomaly calculations 
 files <- list.files(paste0(home, "/MODIS_ET/clean"), full.names = T, pattern = ".tif$")
 files_short <- list.files(paste0(home, "/MODIS_ET/clean"), full.names = F, pattern = ".tif$")
 
@@ -27,11 +25,10 @@ file_dt$month <- month(file_dt$date) # find month and year to help with subsetti
 file_dt$year <- year(file_dt$date)
 file_dt$YM <- paste0(file_dt$year, sprintf("%02d", file_dt$month))
 
-
-# first calculate the long term mean and standard deviation 
-unique_months <- unique(file_dt$month) # for the long term calcs, we will calculate for each month 
-
-beginCluster(n = 20)
+#################################################################################################
+# Calculate the long term mean and standard deviation of ET for every month 
+unique_months <- unique(file_dt$month) 
+beginCluster(n = 20) # start a cluster 
 for(i in 1:length(unique_months)){
   sub <- file_dt[month == unique_months[i]]$file
   stk <- do.call('stack', lapply(sub, raster))
@@ -44,14 +41,14 @@ for(i in 1:length(unique_months)){
               overwrite = T, format = "GTiff")
   print(i)
 }
+print('longn term calculations are finished')
 
-print('longn term shit is finished')
-
-# then calculate anomalies 
+##############################################################################################
+# then calculate average ET and anomaly for every month-year 
 unique_YM <- unique(file_dt$YM) # get a list of unique year-month combos
-print(length(unique_YM))
 
-ltm <- list.files(paste0(home, "/MODIS_ET/ltm_month"), full.names = T) # bring in ltm and ltsd to index for anom calcs
+# bring in ltm and ltsd to index for anom calcs
+ltm <- list.files(paste0(home, "/MODIS_ET/ltm_month"), full.names = T) 
 ltsd <- list.files(paste0(home, "/MODIS_ET/ltsd_month"), full.names = T)
 
 for(i in 1:length(unique_YM)){
@@ -75,8 +72,6 @@ for(i in 1:length(unique_YM)){
   writeRaster(anom, paste0(home, "/MODIS_ET/monthlyAnom/et_", unique_YM[i], ".tif"), overwrite = T, format = "GTiff")
   print(i)
 }
-
-
 endCluster()
 
 

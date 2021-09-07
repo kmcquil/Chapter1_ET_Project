@@ -1,7 +1,7 @@
 ####################################################################################################
 ## Calculate monthly landsat ET long term mean and standard deviation 
 ####################################################################################################
-tileID <- seq(1,5)
+tileID <- seq(1,5) # tiles to calculate ltm and ltsd for in this script. Other scripts handle the other tiles 
 library(raster)
 library(gdalUtils)
 library(data.table)
@@ -23,16 +23,15 @@ file_dt <- data.table(file = efile,
 file_dt$month <- month(file_dt$date) # find month and year to help with subsetting 
 file_dt$year <- year(file_dt$date)
 file_dt$YM <- paste0(file_dt$year, sprintf("%02d", file_dt$month))
-## Add in column for tile 
 file_dt$tile <- substr(efile_short, 1, 12)
 
-unique_months <- unique(file_dt$month) # for the long term calcs, we will calculate for each month 
+# list the unique months and tiles 
+unique_months <- unique(file_dt$month) 
 unique_tiles <- unique(file_dt$tile)
 
+# start a cluster 
 beginCluster(30)
-
-untls <- unique_tils[tileID]
+untls <- unique_tiles[tileID]
+# calculate the long term mean andn long term standard deviation of each month for each tile
 apply(untls , LTs)
-#LTs(unique_tiles[tileID])
-
 endCluster()

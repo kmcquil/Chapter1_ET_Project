@@ -1,7 +1,7 @@
 ####################################################################################################
 ## Calculate monthly landsat ET long term mean and standard deviation 
 ####################################################################################################
-tileID <- seq(11-15)
+tileID <- seq(11,15)
 library(raster)
 library(gdalUtils)
 library(data.table)
@@ -31,8 +31,7 @@ unique_tiles <- unique(file_dt$tile)
 
 beginCluster()
 
-untls <- unique_tils[tileID]
+untls <- unique_tiles[tileID]
 apply(untls , LTs)
-#LTs(unique_tiles[tileID])
 
 endCluster()

@@ -31,9 +31,8 @@ unique_tiles <- unique(file_dt$tile)
 
 beginCluster(30)
 
-untls <- unique_tils[tileID]
+untls <- unique_tiles[tileID]
 apply(untls , LTs)
-#LTs(unique_tiles[tileID])
 
 
 endCluster()

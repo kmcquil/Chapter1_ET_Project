@@ -2,23 +2,23 @@
 ## Assess differences in composite ET drought response according to 
 ## forest composition, elevation, and height above nearest drainage for Landsat
 ##############################################################################
-
 library(data.table)
 library(foreach)
 library(doParallel)
 library(parallel)
 library(raster)
 
-home <- "G:/My Drive/Chapter1_ET_Project"
 home <- "/share/klmarti3/kmcquil/Chapter1_ET_Project"
 source(paste0(home, "/Analysis/scripts/analysis_funcs.R"))
 n = 10 # how many cores do i want 
 
+# start a cluster 
 UseCores <- detectCores()-1
 cl <- makeCluster(UseCores)
 registerDoParallel(cl)
 
 # bring in residual, ETanom, and SPI data tables
+# drop rows that are all NA except for cell number 
 res_dt <- fread(paste0(home, "/Analysis/outputs/Landsat/meanResiduals.csv"), nThread = n)
 res_dt <- res_dt[!Reduce(`&`, lapply(res_dt[,2:ncol(res_dt)], is.na))]
 
@@ -96,12 +96,11 @@ colnames(Res_cols) <- c("cellnum","Res_all", "Res_moderate", "Res_severe", "Res_
 # merge based on cellnum
 data <- merge(ET_cols, Res_cols, by = "cellnum", all.x=T, all.y=T)
 
-# get rid of these large now extra objects 
+# get rid of these large objects that are no longer needed 
 rm(et_dt)
 rm(res_dt)
 rm(ET_cols)
 rm(Res_cols)
-
 
 # grab the forest composition products and merge them in 
 FC_wilson <- as.data.frame(raster(paste0(home, "/Data/forest_composition/wilson_landsat_classified.tif")))

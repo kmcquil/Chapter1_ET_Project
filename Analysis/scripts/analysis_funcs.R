@@ -2,9 +2,8 @@
 ## Functions for the analysis 
 #########################################################################################################################
 
-
 #########################################################################################################################
-## Function: Identify the drought peak and associated anomaly for a given year if drought peak < -1.3 (moderate drought)
+## Function: Identify the drought peak and associated anomaly for a given year if drought peak < -1.3 ( at least moderate drought)
 ## Inputs: 
 #### drought_files: vector of monthly spi raster files 
 #### ET_files: vector of monthly ET anomaly files
@@ -57,7 +56,7 @@ droughtID <- function(drought_files, ET_files, n, home, y, sensor){
 #########################################################################################################################
 ## Function: Identify the drought peak and associated anomaly for a given year if drought peak < -1.3 (moderate drought)
 ## This is essentiallly the same as droughtID function but for use on the landsat data broken down into tiles since
-## it was too large to process all at once 
+## they were too large to process all at once 
 ## Inputs: 
 #### drought_files: vector of monthly spi raster files 
 #### ET_files: vector of monthly ET anomaly files
@@ -115,7 +114,7 @@ droughtID_tl <- function(drought_files, ET_files, n, home, y, tl, sensor){
 #### drought_files: spi monthly raster files 
 #### ET_files: et anomaly monthly raster files 
 #### forest mask: file for the forest mask 
-#### n = number of cores 
+#### n = number of cores to use 
 #### sensor = "MODIS" or "Landsat"
 ## Outputs: 
 #### write out the beta coefficients with cell number for ID
@@ -151,12 +150,11 @@ modFit <- function(drought_files, ET_files, fmask, n, sensor){
   f_dt <- as.data.frame(raster(fmask))
   colnames(f_dt) <- c("fmask")
   
-  # drop rows from each dataframe where forest mask == 0 indicating no forest 
+  # keep rows where the forest mask == 1, indicating forest 
   spi_dt <- spi_dt[f_dt$fmask == 1,]
   et_dt <- et_dt[f_dt$fmask == 1,]
   
   # fit a linearmodel for each corresonding row (pixel) and put the model B0 and B1 coefficients into a dt
-  # initiate the list
   beta_dt <- foreach(i = 1:nrow(spi_dt), .combine=rbind)%dopar%{
     library(data.table)
     # get the et and spi rows which correspond to the same cell and put into a dt and keep only complete cases 
@@ -189,32 +187,40 @@ modFit <- function(drought_files, ET_files, fmask, n, sensor){
   return()
 }
 
-
-
-
+##########################################################################################################################
+## Function: Take a .tif file and convert it to a DF
+## Input: 
+#### tif: the file path of the raster to be converted to a data frame 
+## Output: 
+#### the new dataframe 
+##########################################################################################################################
+rastToDF <- function(tif){
+  library(raster)
+  as.data.frame(raster(tif))
+}
 
 #########################################################################################################################
 ## Function: Fit a linear model of ET anom ~ SPI for growing season months for each grid cell to the Landsat data that 
-## has been broken into tiles. This is essentially the same as function above 
+## has been broken into tiles. This is essentially the same as function above but broken into tiles because the landsat 
+## rasters were too big to process all at once 
 ## Inputs: 
 #### drought_files: spi monthly raster files 
 #### ET_files: et anomaly monthly raster files 
 #### fmask: file for the forest mask 
-#### cl = the parallel cluster 
+#### cl = the parallel cluster -- use Rmpi 
 #### sensor = "MODIS" or "Landsat"
 #### tl = tile ID used to pull in correct files 
 ## Outputs: 
 #### write out the beta coefficeints with cell number and ID by tile 
 ##########################################################################################################################
 
-# function to take a .tif file and convert it to a DF
-rastToDF <- function(tif){
-  library(raster)
-  as.data.frame(raster(tif))
-}
-
-# function to calculate beta coefficients 
-# x is one long vector that has SPI and then ET vlaues. Using long vector to work with rmpi 
+##########################################################################################################################
+## Function: Calculate the beta coefficients within the modFit_tl function 
+## Input: 
+#### x: one long vector that has the SPI values and then ET values in chronological order for a pixel. Put ET and SPI into one vector to work with Rmpi 
+## Output: 
+#### vector with the B0 and B1 coefficeints for that particular pixel 
+##########################################################################################################################
 betas_fun <- function(x){
   library(data.table)
   thresh <- length(x)/2 # identify the threshold of SPI vs ET values 
@@ -413,7 +419,7 @@ calcResiduals_tl <- function(spi_file, et_file, beta_file, y,tl, sensor){
 #########################################################################################################################
 ## Function: Take all of the residuals/ET anomalies/SPI and find the average by cell to get the average drought impact 
 ## Inputs: 
-#### resid_files: files of residuals for every year with drought
+#### resid_files: files of residuals/ET anomalies/SPI for every year with drought
 #### n = number of threads (just to open and close all of those csv files)
 #### sensor = "MODIS" or "Landsat"
 ## Outputs: 
@@ -470,7 +476,7 @@ avgSPI <- function(resid_files, n, sensor){
 ## Function to convert a data.table with a column for cellnum and the variable of interest back into a raster
 ## Inputs: 
 #### dtIN: data.table with column for cellnum and column of interest to convert to raster 
-#### ExampleRaster: a raster with the right dimensions and projection 
+#### ExampleRaster: a raster with desired crs, extent, and resolution
 #### fout: filename to write out the raster 
 #### open: A true or false, do you want to also open the raster rn? 
 ## Outputs:
@@ -491,9 +497,6 @@ DTtoRast <- function(dtIN, ExampleRaster, fout, open){
   writeRaster(new_output_raster, fout, overwrite = T, format = "GTiff")
   if(open == TRUE){return(new_output_raster)}else{return()}
 }
-
-
-
 
 
 ##############################################################################################################
@@ -522,340 +525,6 @@ avgByDroughtSeverity <- function(varIN, spiIN, lowerBound, upperBound){
   keep <- c("cellnum", paste0("mean_", lowerBound, "_", upperBound))
   keepDT <- varIN[, ..keep]
   return(keepDT)
-  
-}
-
-
-##############################################################################################################
-## Function to perform a KW test and a pairwise wilcox test with corrections for multiple testing
-## Perform on ETanom and residuals for all types of drought (all drought, mod, severe, extreme)
-## Inputs: 
-#### dtIN : data table with the et/resid composite info and all the attributes 
-#### grouping_col: the name of the grouping column in quotes 
-## Outputs:
-##### a data.table 
-# count in each group, 
-###############################################################################################################
-
-kwTestbyDroughtGroup <- function(dtIN, grouping_col, VAR){
-  
-  dr_cols <- names(dtIN)[2:9]
-  
-  result <- ksTest(dtIN, dr_cols[1], grouping_col, VAR)
-  for(i in 2:length(dr_cols)){
-    result <- rbind(result, ksTest(dtIN, dr_cols[i], grouping_col, VAR))
-  }
-  
-  return(result)
-}
-
-
-
-
-ksTest <- function(dtIN, resp, group, VAR){
-  # subset to complete cases of the response variable and grouping variable
-  sel_col <- c(resp, group)
-  sub <- dtIN[, ..sel_col]
-  sub <- na.omit(sub)
-  names(sub) <- c("response", "group")
-  
-  # get the count of each category, the mean and median of each category
-  summary <- sub[, .(Count = .N, Mean = mean(response), Median = median(response)), .(group) ]
-  
-  sum_cols <- c()
-  for(i in 1:length(summary$group)){
-    sum_cols <- c(sum_cols, c(paste0(summary$group[i], "_Count"), paste0(summary$group[i], "_Mean"), paste0(summary$group[i], "_Med")))
-    
-  }
-  
-  
-  sum_dt <- setNames(data.table(matrix(nrow = 1, ncol = nrow(summary)*3)), sum_cols)
-  sum_dt <- sum_dt[, lapply(.SD, as.numeric)]
-  
-  
-  # since it created the columns in the order the data is listed in summary, we can just loop through it the same way to fill it in
-  x <- 0
-  for(i in 1:nrow(summary)){
-    for(j in 2:ncol(summary)){
-      x <- x+1
-      sum_dt[1, x] <- summary[i, ..j]
-    }
-  }
-  
-  id <- data.table(ID = sel_col[1])
-  
-  # do the ks test 
-  #ks <- kruskal.test(response ~ group, data = sub)
-  #ks_pval <- ks$p.value
-  
-  # do the pairwise wilcox test with corrections for multiple testing 
-  pww <- pairwise.wilcox.test(sub$response, sub$group, p.adjust.method = 'BH')
-  pww <- pww$p.value
-  
-  # create a data.table with 1 row, name the columns, and then loop through each place of the pww data.table
-  # use grep to match with the right column, and insert the value
-  # make sure it works regardless of size 
-  
-  if(VAR == "FC"){
-    pw_row <- data.table(Diffuse_Ring_pval = as.numeric(NA), 
-                         Diffuse_Tracheid_pval = as.numeric(NA), 
-                         Ring_Tracheid_pval = as.numeric(NA))
-    
-    pw_row_names <- names(pw_row)
-  }else if(VAR == "Elevation"){
-    pw_row <- data.table(Low_Med_pval = as.numeric(NA), 
-                         Low_High_pval = as.numeric(NA), 
-                         Med_High_pval = as.numeric(NA))
-    pw_row_names <- names(pw_row)
-  }else if(VAR == "HAND"){
-    pw_row <- data.table(Riparian_Slope_pval = as.numeric(NA), 
-                         Riparian_Ridge_pval = as.numeric(NA), 
-                         Slope_Ridge_pval = as.numeric(NA))
-    pw_row_names <- names(pw_row)
-  }
- 
-  
-  for(i in 1:(dim(pww)[1])){
-    for(j in 1:(dim(pww)[2])){
-      val <- pww[i,j]
-      r <- rownames(pww)[i]
-      c <- colnames(pww)[j]
-      if(r == c){next}
-      
-      pw_row_names_sub <- pw_row_names[grep(r, pw_row_names)]
-      pw_row_names_subsub <- pw_row_names_sub[grep(c, pw_row_names_sub)]
-      
-      pw_row[1, pw_row_names_subsub] <- val
-      
-    }
-  }
-  
-  final_dt <- cbind(id, sum_dt)
-  final_dt <- cbind(final_dt, pw_row)
-  return(final_dt)
-}
-
-
-
-
-########################################################################################################
-# Function to calculate the sens slope and man kendall tau 
-# take a DT with cellnum, year, ET, and spi
-# for annual, 3 year rolling, and 5 year rolling 
-# return tabel with sens slope and pvalue for each of them 
-# a plot for each of them 
-#######################################################################################################
-sens_fun <- function(DF){
-  
-  DF_comp <- DF[complete.cases(DF),]
-  colnames(DF_comp) <- c("cellnum", "Year", "ET_Residual", "ET_anom", "SPI")
-  et_res_yearly_mean <- DF_comp[, .(resMean = mean(ET_Residual, na.rm=T), 
-                                         resSD = sd(ET_Residual, na.rm=T)), .(Year)]
-  et_res_yearly_mean <- et_res_yearly_mean[order(Year)]
-  annual_sens <- sens.slope(et_res_yearly_mean$resMean)
-  
-  et_res_yearly_mean$ymax <- et_res_yearly_mean$resMean + et_res_yearly_mean$resSD
-  et_res_yearly_mean$ymin <- et_res_yearly_mean$resMean - et_res_yearly_mean$resSD
-  
-  an <- ggplot(et_res_yearly_mean, aes(x=Year, y=resMean)) +
-    geom_line(size=2) + 
-    geom_ribbon(aes(ymin = ymin, ymax = ymax), alpha = 0.3, col = 'purple', fill = 'purple')+
-    theme_bw() + 
-    xlab("Year") + 
-    ylab("ET Residual at Drought Peak") + 
-    ggtitle("Annual ET Residual at Drought Peak")
-  
-  
-  
-  # now do 5 year rolling
-  int_start <- seq(2000, 2015, 1)
-  int_end <- int_start + 4
-  rolling5 <- data.table(start_year = int_start, 
-                         end_year = int_end, 
-                         meanRes = as.numeric(rep(NA, length(int_start))),
-                         SDRes = as.numeric(rep(NA, length(int_start))))
-  for(i in 1:nrow(rolling5)){
-    
-    rolling5$meanRes[i] <- mean(DF_comp[DF_comp$Year >= rolling5$start_year[i] & 
-                                          DF_comp$Year <= rolling5$end_year[i]]$ET_Residual, na.rm=T)
-    rolling5$SDRes[i] <- sd(DF_comp[DF_comp$Year >= rolling5$start_year[i] & 
-                                      DF_comp$Year <= rolling5$end_year[i]]$ET_Residual, na.rm=T)
-    
-  }
-  rolling5$ymax <- rolling5$meanRes + rolling5$SDRes
-  rolling5$ymin <- rolling5$meanRes - rolling5$SDRes
-  rolling5 <- rolling5[complete.cases(rolling5),]
-  rolling5_sens <- sens.slope(rolling5$meanRes)
-  r5 <- ggplot(rolling5, aes(x=start_year, y=meanRes)) +
-    geom_line(size=2) + 
-    geom_ribbon(aes(ymin = ymin, ymax = ymax), alpha = 0.3, col = 'purple', fill = 'purple')+
-    theme_bw() + 
-    xlab("Year") + 
-    ylab("ET Residual at Drought Peak") + 
-    ggtitle("5-year rolling ET Residual at Drought Peak")
-  
-  
-  
-  # now do 3 year rolling
-  int_start <- seq(2000, 2017, 1)
-  int_end <- int_start + 2
-  rolling3 <- data.table(start_year = int_start, 
-                         end_year = int_end, 
-                         meanRes = as.numeric(rep(NA, length(int_start))),
-                         SDRes = as.numeric(rep(NA, length(int_start))))
-  for(i in 1:nrow(rolling3)){
-    
-    rolling3$meanRes[i] <- mean(DF_comp[DF_comp$Year >= rolling3$start_year[i] & 
-                                          DF_comp$Year <= rolling3$end_year[i]]$ET_Residual, na.rm=T)
-    rolling3$SDRes[i] <- sd(DF_comp[DF_comp$Year >= rolling3$start_year[i] & 
-                                      DF_comp$Year <= rolling3$end_year[i]]$ET_Residual, na.rm=T)
-    
-  }
-  rolling3$ymax <- rolling3$meanRes + rolling3$SDRes
-  rolling3$ymin <- rolling3$meanRes - rolling3$SDRes
-  rolling3 <- rolling3[complete.cases(rolling3), ]
-  rolling3_sens <- sens.slope(rolling3$meanRes)
-  
-  r3 <- ggplot(rolling3, aes(x=start_year, y=meanRes)) +
-    geom_line(size=2) + 
-    geom_ribbon(aes(ymin = ymin, ymax = ymax), alpha = 0.3, col = 'purple', fill = 'purple')+
-    theme_bw() + 
-    xlab("Year") + 
-    ylab("ET Residual at Drought Peak") + 
-    ggtitle("3-year rolling ET Residual at Drought Peak")
-  
-  
-  results <- data.table(Group = c("Annual", "3-Year", "5-Year"), 
-                        SenSlope = c(annual_sens$estimates[1], rolling3_sens$estimates[1], rolling5_sens$estimates[1]), 
-                        PValue = c(annual_sens$p.value[1], rolling3_sens$p.value[1], rolling5_sens$p.value[1]))
-  
-  ps <- list(results, an, r3, r5)
-  return(ps)
-  
-}
-
-
-
-sens_fun_landsat <- function(DF, id){
-  
-  DF_comp <- copy(DF)
-  colnames(DF_comp) <- c("cellnum", "Year", "ET_Residual", "SPI")
-  et_res_yearly_mean <- DF_comp[, .(resMean = mean(ET_Residual, na.rm=T), 
-                                    resSD = sd(ET_Residual, na.rm=T)), .(Year)]
-  et_res_yearly_mean <- et_res_yearly_mean[order(Year)]
-  annual_sens <- sens.slope(et_res_yearly_mean$resMean)
-  
-  et_res_yearly_mean$ymax <- et_res_yearly_mean$resMean + et_res_yearly_mean$resSD
-  et_res_yearly_mean$ymin <- et_res_yearly_mean$resMean - et_res_yearly_mean$resSD
-  
-  fwrite(et_res_yearly_mean, paste0(home, "/Analysis/outputs/Landsat/aggDroughtPeaks/annual_", id, ".csv"))
-  
-  int_start <- seq(1985, 2015, 1)
-  int_end <- int_start + 4
-  rolling5 <- data.table(start_year = int_start, 
-                         end_year = int_end, 
-                         meanRes = as.numeric(rep(NA, length(int_start))),
-                         SDRes = as.numeric(rep(NA, length(int_start))))
-  for(i in 1:nrow(rolling5)){
-    sub<-DF_comp[DF_comp$Year >= rolling5$start_year[i] & 
-                   DF_comp$Year <= rolling5$end_year[i], .(meanRes= mean(ET_Residual, na.rm=T), 
-                                                           sdRes= sd(ET_Residual, na.rm=T))]
-    
-    if(nrow(sub) == 0){
-      rolling5$meanRes[i] <- NA
-      rolling5$SDRes[i] <- NA
-    }else{
-      rolling5$meanRes[i] <- sub$meanRes
-      rolling5$SDRes[i] <- sub$sdRes
-    }
-  
-    
-  }
-  
-  rolling5$ymax <- rolling5$meanRes + rolling5$SDRes
-  rolling5$ymin <- rolling5$meanRes - rolling5$SDRes
-  rolling5 <- rolling5[complete.cases(rolling5),]
-
-  fwrite(rolling5, paste0(home, "/Analysis/outputs/Landsat/aggDroughtPeaks/rolling5_", id, ".csv"))
-  
-  
-  # now do 3 year rolling
-  int_start <- seq(1985, 2017, 1)
-  int_end <- int_start + 2
-  rolling3 <- data.table(start_year = int_start, 
-                         end_year = int_end, 
-                         meanRes = as.numeric(rep(NA, length(int_start))),
-                         SDRes = as.numeric(rep(NA, length(int_start))))
-  for(i in 1:nrow(rolling3)){
-    
-    
-    sub<-DF_comp[DF_comp$Year >= rolling3$start_year[i] & 
-                   DF_comp$Year <= rolling3$end_year[i], .(meanRes= mean(ET_Residual, na.rm=T), 
-                                                           sdRes= sd(ET_Residual, na.rm=T))]
-    
-    if(nrow(sub) == 0){
-      rolling3$meanRes[i] <- NA
-      rolling3$SDRes[i] <- NA
-    }else{
-      rolling3$meanRes[i] <- sub$meanRes
-      rolling3$SDRes[i] <- sub$sdRes
-    }
-    
-    
-  }
-  rolling3$ymax <- rolling3$meanRes + rolling3$SDRes
-  rolling3$ymin <- rolling3$meanRes - rolling3$SDRes
-  rolling3 <- rolling3[complete.cases(rolling3), ]
-  fwrite(rolling3, paste0(home, "/Analysis/outputs/Landsat/aggDroughtPeaks/rolling3_", id, ".csv"))
-
- 
-  return()
-  
-}
-
-
-sens_fun_landsat_figs <- function(file_annual, file_rolling3, file_rolling5){
-  et_res_yearly <- fread(file_annual)
-  rolling3 <- fread(file_rolling3)  
-  rolling5 <- fread(file_rolling5)
-  
-  
-  
-  annual_sens <- sens.slope(et_res_yearly$resMean)
-  an <- ggplot(et_res_yearly, aes(x=Year, y=resMean)) +
-    geom_line(size=2) + 
-    geom_ribbon(aes(ymin = ymin, ymax = ymax), alpha = 0.3, col = 'purple', fill = 'purple')+
-    theme_bw() + 
-    xlab("Year") + 
-    ylab("ET Residual at Drought Peak") + 
-    ggtitle("Annual ET Residual at Drought Peak")
-  
-  rolling5_sens <- sens.slope(rolling5$meanRes)
-  r5 <- ggplot(rolling5, aes(x=start_year, y=meanRes)) +
-    geom_line(size=2) + 
-    geom_ribbon(aes(ymin = ymin, ymax = ymax), alpha = 0.3, col = 'purple', fill = 'purple')+
-    theme_bw() + 
-    xlab("Year") + 
-    ylab("ET Residual at Drought Peak") + 
-    ggtitle("5-year rolling ET Residual at Drought Peak")
-  
-  
-  rolling3_sens <- sens.slope(rolling3$meanRes)
-  r3 <- ggplot(rolling3, aes(x=start_year, y=meanRes)) +
-    geom_line(size=2) + 
-    geom_ribbon(aes(ymin = ymin, ymax = ymax), alpha = 0.3, col = 'purple', fill = 'purple')+
-    theme_bw() + 
-    xlab("Year") + 
-    ylab("ET Residual at Drought Peak") + 
-    ggtitle("3-year rolling ET Residual at Drought Peak")
-  
-  
-  results <- data.table(Group = c("Annual", "3-Year", "5-Year"), 
-                        SenSlope = c(annual_sens$estimates[1], rolling3_sens$estimates[1], rolling5_sens$estimates[1]), 
-                        PValue = c(annual_sens$p.value[1], rolling3_sens$p.value[1], rolling5_sens$p.value[1]))
-  
-  ps <- list(results, an, r3, r5)
-  return(ps)
   
 }
 
@@ -944,12 +613,30 @@ retiling <- function(inFiles, tile_template, template, output_dir, n){
 
 
 ####################################################################################################
-## Function to get the average of the variable during non drought periods 
-## Inputs: 
-
+## Function: Calculate the average ET anomaly and ET residual during months classified as nomral wetness 
+## using SPI on a pixel basis. Normal wetness is spi <= 0.49 & spi >= -0.49
+## Inputs:
+#### drought_files: monthly raster SPI files 
+#### ET_files: monthly raster ET files 
+#### betas_file: the csv with linear model coefficients for each cell 
+#### fmask: the forest mask 
+#### cl: the cluster for parallel computing 
+#### sensor: which sensor? (MODIS or Landsat)
+#### tl: for Landsat use the tile ID; for MODIS put NA
 ## Outputs:
-
+#### a csv with columns: cell number, average ET anomaly, and average ET residual 
 #####################################################################################################
+
+####################################################################################################
+## Function: Calculate the average ET anomaly and ET residual during months classified as nomral wetness 
+## This is used within the avgNA_tl function 
+## Inputs:
+#### x: a vector with SPI and ET values corresponding to one pixel. The B0 and B1 coeffficents are between the SPI and ET values in the vector. 
+###### I put these all in one vector to make it easier to use the values with Rmpi functions 
+## Outputs:
+#### a vector with the average ET anomaly and average ET residual during normal wetness periods 
+#####################################################################################################
+
 avg_fun <- function(x){
   library(data.table)
   thresh <- (length(x)-2)/2
@@ -971,7 +658,6 @@ avg_fun <- function(x){
   }
   
 }
-
 
 avgNA_tl <- function(drought_files, ET_files, betas_file, fmask, cl, sensor, tl){
   
@@ -1024,7 +710,7 @@ avgNA_tl <- function(drought_files, ET_files, betas_file, fmask, cl, sensor, tl)
     
     beta_dt <- rbind(beta_dt1, beta_dt2, beta_dt3, beta_dt4)
   }
-  print("finished calculating betas")
+  print("finished calculating avg ET!")
   
   beta_dt <- cbind(spi_dt$cellnum, beta_dt)
   colnames(beta_dt) <- c("cellnum", "etAnomAvg", "etResAvg")
@@ -1039,20 +725,18 @@ avgNA_tl <- function(drought_files, ET_files, betas_file, fmask, cl, sensor, tl)
 }
 
 
-
-
-
-
-############################################################################################################
-## Function to calculate the rolling 5 year coupling between monthly spi and monthly ET anomalies 
-## Input 
-#### 
-
-#############################################################################################################
-
-# since we are looking at a 5 year rolling coupling and only looking at growing season months (6 months of year)
-# look at blocks of 30 rows at a time
-
+####################################################################################################
+## Function: Calculate the rolling and overall coupling of monthly SPI and monthly ET anomalies 
+## Only calculate coupling if at least half of observations for the time period are available for the rolling coupling 
+## Only calculate overall coupling at least 15 of observations were available 
+## This is used within the rollingCoupling function 
+## Inputs:
+#### x: a vector with SPI and ET values corresponding to one pixel.  
+###### I put these all in one vector to make it easier to use the values with Rmpi functions 
+## Outputs:
+#### a vector with the significant rolling coupling coefficients at each time step and the overall coupling last. 
+###### Only correlations significant at 0.05 were included. All other values masked to NA
+#####################################################################################################
 coupling_fun <- function(x){
   library(data.table)
   thresh <- length(x)/2
@@ -1063,6 +747,8 @@ coupling_fun <- function(x){
   # initialize a vector for rho and p-value
   rho <- c()
   pval <- c()
+  
+  # since we are looking at a 5 year rolling coupling and only looking at growing season months (6 months of year),look at blocks of 30 rows at a time
   for(i in 1:(nrow(sub)-29)){
     subsub <- sub[i:(i+29),]
     if(sum(!is.na(subsub$et)) < 15){
@@ -1092,8 +778,14 @@ coupling_fun <- function(x){
   return(final_rho)
 }
 
-
-# this function calcualtes sens slope for each row with at least 25% of the coupling values significiant 
+####################################################################################################
+## Function: Calculate Sen's slope and Man Kendal trend test for each row where at least 25% of the correlation coefficeints are significant
+## This is used within the rollingCoupling function 
+## Inputs:
+#### x: a vector of 5-year rolling coupling and overall coupling. each vector corresponds to a cell. 
+## Outputs:
+#### a vector with the Sen's slope and the Man Kendall significance level (p-value)
+#####################################################################################################
 sens_row <- function(x){
   library(trend)
   x <- x[1:length(x)-1] # because the last row is the overall coupling 
@@ -1112,6 +804,21 @@ sens_row <- function(x){
 }
 
 
+####################################################################################################
+## Function: Calculate the rolling and overall coupling of monthly SPI and monthly ET anomalies and the 
+## Sen's slope and Man Kendall trend test of the rolling coupling for each pixel
+## Inputs:
+#### drought_files: monthly spi raster files 
+#### ET_files: monthly ET raster files 
+#### dates: A vector of dates corresponding to the monthly drought and ET files in the form YYYYmmdd
+#### fmask: forest mask 
+#### cl: intialized cluster 
+#### sensor: MODIS or Landsat 
+#### tl: tile ID or NA for MODIS 
+## Outputs:
+#### a .csv file where each row corresponds to a pixel, the first column is cell number,
+###### and each column is the rolling coupling at each consective time step and the last column is the overall coupling 
+#####################################################################################################
 rollingCoupling <- function(drought_files, ET_files, dates, fmask, cl, sensor, tl){
   
   spi_dt <- parSapply(cl, drought_files, rastToDF)
@@ -1187,15 +894,4 @@ rollingCoupling <- function(drought_files, ET_files, dates, fmask, cl, sensor, t
   }
 }
   
-
-
-
-
-
-
-
-
-
-
-
 

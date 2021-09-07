@@ -1,13 +1,13 @@
-#################################################################################
-## Landsat resample files are apparently too big so i need to retile now fuck me 
-#################################################################################
-
+#############################################################################################
+## Landsat tiles are too big once mosaiced over the full ROI so retile into 42 smaller tiles
+#############################################################################################
 library(gdalUtils)
 library(raster)
 library(rgdal)
 library(doParallel)
 library(foreach)
 
+# initialize a clusters
 UseCores <- detectCores()-1
 cl <- makeCluster(UseCores)
 registerDoParallel(cl)
@@ -20,20 +20,15 @@ efile_short <- list.files(paste0(home, "/Landsat_ET/tifs_resampled"), full.names
 
 print(length(efile))
 
-# break each raster into 9 tiles 
-# do x first (ncols) = 15096
-# xwin <- c(0, 5032, 10064)
-# x_tile_size <- c(5032, 5032, 5032)
+# break each raster into 42 tiles 
 xwin <- seq(0, 15096, 2516)
 x_tile_size <-rep(2516, 6)
 
-
 # next do y (nrows) = 11501
-# ywin <- c(0, 3833, 7666)
-# y_tile_size <- c(3833, 3833, 3835)
 ywin <- seq(0, 11501, 1643)
 y_tile_size <- rep(1643, 7)
 
+# retile each mosaiced file and save with the tile and date as an id 
 foreach(i = 1:length(efile))%dopar%{
   library(gdalUtils)
   library(raster)
