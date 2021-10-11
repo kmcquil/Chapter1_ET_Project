@@ -131,8 +131,8 @@ contPlots_1 <- function(DF, X, Z, xlab){
   }
   
   ap <- ggplot(data = agg, aes(x = !!ensym(X), y = meanAnom, color = !!ensym(Z), fill = !!ensym(Z))) + 
-    geom_line(size = 1) + 
-    geom_point(size = 3) + 
+    geom_line(size = 2) + 
+    #geom_point(size = 3) + 
     geom_ribbon(aes(ymin = anom_minus_sd, ymax = anom_plus_sd), alpha = 0.20, color = NA) + 
     scale_color_manual(values = viridis(4))+
     scale_fill_manual(values = viridis(4))+
@@ -140,6 +140,7 @@ contPlots_1 <- function(DF, X, Z, xlab){
     ylab(expression(bold(ET["dp"]))) +
     theme_classic()+
     theme(legend.title = element_blank()) + 
+    #theme(legend.position = "bottom") +
     theme(legend.position = "none") +
     theme(axis.text=element_text(size=12, color = 'black'),
           axis.title=element_text(size=12,face="bold"))
@@ -147,6 +148,61 @@ contPlots_1 <- function(DF, X, Z, xlab){
   results_list <- list(ap, results)
   return(results_list)
 }
+
+
+
+########################################################################################################
+########################################################################################################
+## The same function as above but returns the function with a legend
+
+contPlots_legend <- function(DF, X, Z, xlab){
+  library(trend)
+  agg <- fread(DF)
+  agg$DroughtSeverity <- ordered(agg$DroughtSeverity, levels = c("None", "Moderate", "Severe", "Extreme", "All"))
+  groups <- unique(agg[,..Z])
+  results <- data.table(groups[,1], senslope_anom = as.numeric(rep(NA, nrow(groups))), pval_anom = as.numeric(rep(NA, nrow(groups))), 
+                        senslope_res = as.numeric(rep(NA, nrow(groups))), pval_res = as.numeric(rep(NA, nrow(groups))))
+  for(i in 1:nrow(results)){
+    sub <- agg[agg[[Z]] == results[[1]][i],]
+    sub <- sub[order(sub[[1]]),]
+    if(nrow(sub) < 5){
+      results$senslope_anom[i] <- NA
+      results$pval_anom[i] <- NA
+      results$senslope_res[i] <- NA
+      results$pval_res[i] <- NA
+    }else{
+      anom_sen <- sens.slope(sub$meanAnom)
+      results$senslope_anom[i] <- anom_sen$estimates
+      results$pval_anom[i] <- anom_sen$p.value
+      
+      res_sen <- sens.slope(sub$meanRes)
+      results$senslope_res[i] <- res_sen$estimates
+      results$pval_res[i] <- res_sen$p.value
+    }
+    
+  }
+  
+  ap <- ggplot(data = agg, aes(x = !!ensym(X), y = meanAnom, color = !!ensym(Z), fill = !!ensym(Z))) + 
+    geom_line(size = 2) + 
+    #geom_point(size = 3) + 
+    geom_ribbon(aes(ymin = anom_minus_sd, ymax = anom_plus_sd), alpha = 0.20, color = NA) + 
+    scale_color_manual(values = viridis(4))+
+    scale_fill_manual(values = viridis(4))+
+    xlab(xlab) + 
+    ylab(expression(bold(ET["dp"]))) +
+    theme_classic()+
+    theme(legend.title = element_blank()) + 
+    theme(legend.position = "bottom", 
+          legend.text=element_text(size=12)) +
+    theme(axis.text=element_text(size=12, color = 'black'),
+          axis.title=element_text(size=12,face="bold"))
+  
+  results_list <- list(ap, results)
+  return(results_list)
+}
+
+
+
 
 ########################################################################################################
 ########################################################################################################
@@ -162,9 +218,15 @@ makeLabels <- function(DF){
   labels <- c()
   for(i in 1:length(droughts)){
     s <- results[DroughtSeverity == droughts[[i]], 2]
-    p <- ifelse(results[DroughtSeverity == droughts[[i]], 3] <= 0.001, "***", 
-                ifelse(results[DroughtSeverity == droughts[[i]], 3] <= 0.01, "**", 
-                       ifelse(results[DroughtSeverity == droughts[[i]], 3] <= 0.05, "*", "")))
+    if(nrow(s) == 0){
+      p <- NA
+      s <- NA
+    }else{
+      p <- ifelse(results[DroughtSeverity == droughts[[i]], 3] <= 0.001, "***", 
+                  ifelse(results[DroughtSeverity == droughts[[i]], 3] <= 0.01, "**", 
+                         ifelse(results[DroughtSeverity == droughts[[i]], 3] <= 0.05, "*", "")))
+    }
+    
     labels <- c(labels, paste0(droughts[[i]], " Slope = ", round(s, 4), p))
     
   }

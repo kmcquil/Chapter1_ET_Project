@@ -1,3 +1,5 @@
+Workflow.gslides
+Data/ALEXI/
 Data/coweeta/
 Data/forest_composition/*
 !Data/forest_composition/Wilson_FC_SBR
@@ -16,8 +18,11 @@ Data/tl_2017_us_state/
 Data/Topography/
 Analysis/outputs/
 Visualizing/**/*.csv
+Visualizing/**/**/*.csv
+Visualizing/figures/
 *.xlsx
 *.tif
 *.csv
 *.ini
 *.xml
+*.csh

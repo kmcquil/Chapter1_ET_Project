@@ -73,6 +73,7 @@ monthly_et_df <- et_df[, .(MODIS_ET_avg = mean(MODIS_ET), OBS_ET_avg = mean(OBS_
 ModMonthly <- metrics_fun(monthly_et_df$OBS_ET_avg, monthly_et_df$MODIS_ET_avg, "Monthly")
 
 # plot the flux tower vs MODIS ET, the linear model, and a 1:1 line for comparison 
+tiff("G:/My Drive/Chapter1_ET_Project/Figures/figure_2.tiff", units="in", width=9, height=6, res=800)
 par(mfrow=c(1,4), omi=c(0,0.25,0,0.25), mar = c(5.1,6.1,4.1,1.1))
 plot(et_df$OBS_ET, et_df$MODIS_ET, 
      pch = 16, cex = 1, col = "#313695",main="", 
@@ -109,8 +110,8 @@ abline(0, 1, col = "#d73027", lty=2, lwd=3)
 ec_et <- fread("G:/My Drive/Dissertation/ameriflux/et_mod_obs_df.csv")
 ec_et <- ec_et[V1 >= as.Date("2011-01-01") & V1 < as.Date("2016-01-01")]
 
-landsat_tifs <- list.files(paste0(home, "/Data_Testing/Landsat_ET/tifs_resampled"), full.names=T, pattern = ".tif$")
-landsat_tifs_short <- list.files(paste0(home, "/Data_Testing/Landsat_ET/tifs_resampled"), full.names=F, pattern = ".tif$")
+landsat_tifs <- list.files(paste0(home, "/Data/Landsat_ET/tifs_resampled"), full.names=T, pattern = ".tif$")
+landsat_tifs_short <- list.files(paste0(home, "/Data/Landsat_ET/tifs_resampled"), full.names=F, pattern = ".tif$")
 
 et_df <- data.table(file = landsat_tifs, 
                     start_date = as.Date(substr(landsat_tifs_short, 4, 11), "%Y%m%d"),
@@ -165,4 +166,4 @@ plot(et_df_sub_50_mo$ET_obs_coweeta_mean, et_df_sub_50_mo$Landsat_ET_mean,
      font.lab = 2)
 abline(lm(et_df_sub_50$Landsat_ET ~ et_df_sub_50$ET_obs_coweeta), col = "#313695", lwd = 3)
 abline(0, 1, col = "#d73027", lty=2, lwd=3)
-
+dev.off()
