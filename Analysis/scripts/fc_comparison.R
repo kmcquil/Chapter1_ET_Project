@@ -43,14 +43,8 @@ color_levels=50  #the number of colors to use
 max_absolute_value=max(abs(c(quants[[1]], quants[[2]]))) #what is the maximum absolute value of raster?
 color_sequence=seq(-max_absolute_value,max_absolute_value,length.out=color_levels+1)
 
-# function to add a label to each sub plot 
-add_label_legend <- function(x, y, label, ...) {
-  legend(x,y, label, bty = "n", ...)
-}
-
 # plot the difference in percent diffuse porous BA. Add the legend last  
-tiff("G:/My Drive/Chapter1_ET_Project/Figures/figure_S1.tiff", units="in", width=5.5, height=9, res=800)
-par(mfrow = c(2,1), mai = c(0, 0, 0, 0))
+par(mfrow = c(1,1), mai = c(0, 0, 0.2, 0), omi=c(0,0.1,0.2,1))
 plot(d_diff, col=col5(n=color_levels), breaks=color_sequence, 
      axis.args=list(at=pretty(quants[[1]]:quants[[2]]), labels=pretty(quants[[1]]:quants[[2]])), 
      zlim = c(quants[[1]], quants[[2]]), legend=FALSE, axes=F, box = F, 
@@ -59,27 +53,23 @@ plot(d_diff, col=col5(n=color_levels), breaks=color_sequence,
      font = 2,
      font.lab = 2)
 plot(sbr, add = T)
-#add_label_legend(50000, 4150000, "A", cex = 1.25, text.font = 2)
-add_label_legend(180000, 4120000, "A", cex = 1.25, text.font = 2)
-
+par(mfrow=c(1, 1), mai=c(0.5, 6, 0.5, 0),omi=c(0,0.8,0,0), new=FALSE)
 # add the legend 
-par(mai=c(0,2, 0.3, 0),new = F)
-plot(d_diff, legend.only=TRUE, legend.shrink=0.9, legend.width=1, 
+plot(d_diff, legend.only=TRUE, legend.shrink=0.9, legend.width=2, 
      zlim=c(quants[[1]], quants[[2]]),
      col=col5(n=color_levels), breaks=color_sequence,
      axis.args=list(at=pretty(quants[[1]]:quants[[2]]), labels=pretty(quants[[1]]:quants[[2]])),
-     legend.args=list(text='', side=4, font=2,line=2.3))
+     legend.args=list(text='', side=4, font=2, text.font=2,line=2.3))
+
 
 # make a histogram of the difference in % diff porous BA 
-par(mai=c(0.85,0.75,0.25,1.35))
+par(mfrow = c(1,1))
 hist(values(d_diff), xlab = "Wilson % BA - Riley % BA", ylab = "",main = "", col= "#313695", xlim = c(-50, 50), 
-     cex.lab = 1, 
+     cex.lab = 1.2, 
      cex.axis=1, 
      font = 1,
-     font.lab = 1)
-add_label_legend(-60, 95000, "B", cex = 1.25, text.font = 2)
+     font.lab = 2,)
 
-dev.off()
 
 ##########################################################################################################
 ## Find how many of Riley top 10 and top 50 species are also identified by Wilson 

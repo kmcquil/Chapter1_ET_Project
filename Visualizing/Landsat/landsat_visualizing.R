@@ -105,15 +105,9 @@ agg_DF_XY(data, "pctDiff_R_bin", "sensAnoms", "/pctDiffR_sensAnoms.csv")
 ###############################################################################################################
 
 # Calculate the percent of forested area with significant overall coupling and with a significant change in overall coupling
-# the data df is all of the forested pixels
 percent_sensCoupling <- (sum(!is.na(data$sensCoupling))/nrow(data))*100  # 1.17%
-percent_sensCoupling_positive <- (sum(!is.na(data$sensCoupling) & data$sensCoupling>0)/nrow(data))*100 # 0.3254743
-percent_sensCoupling_negative <- (sum(!is.na(data$sensCoupling) & data$sensCoupling<0)/nrow(data))*100 #  0.8484882
-
 percent_overallCoupling <- (sum(!is.na(data$allCoupling))/nrow(data))*100  # 16.06%
-percent_overallCoupling_positive <- (sum(!is.na(data$allCoupling) & data$allCoupling>0)/nrow(data))*100 # 14.56378
-percent_overallCoupling_negative <- (sum(!is.na(data$allCoupling) & data$allCoupling<0)/nrow(data))*100 # 1.497039
-
+percent_sensAnoms <- (sum(!is.na(data$sensAnoms))/nrow(data))*100 # 3% 
 
 # get the average elevation across the landscape 
 landsat_elevation <- raster("G:/My Drive/Chapter1_ET_Project/Data/Topography/usgsNED_elevation/elevation30m.tif")

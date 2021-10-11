@@ -1,4 +1,4 @@
-Workflow.gslides
+Figures/
 Data/ALEXI/
 Data/coweeta/
 Data/forest_composition/*
@@ -19,10 +19,10 @@ Data/Topography/
 Analysis/outputs/
 Visualizing/**/*.csv
 Visualizing/**/**/*.csv
-Visualizing/figures/
 *.xlsx
 *.tif
 *.csv
 *.ini
 *.xml
+*.gslides
 *.csh
