@@ -53,9 +53,14 @@ data$elevation_bin <- cut(data$elevation, breaks = e_bins, labels = e_names)
 # create 10m bins of HAND 
 # min is 1.9 and max is 261
 # so bins start at 0 and go to 270 
-h_bins<- seq(0, 270, 10)
+# h_bins<- seq(0, 270, 10)
+# h_names <- h_bins[1:length(h_bins)-1]
+# data$HAND_bin <- cut(data$HAND, breaks = h_bins, labels = h_names)
+## WE ACUALLY CHANGED THIS TO TWI BUT THE VAR NAME IS STILL HAND 
+h_bins<- seq(8, 20, 0.5)
 h_names <- h_bins[1:length(h_bins)-1]
 data$HAND_bin <- cut(data$HAND, breaks = h_bins, labels = h_names)
+
 
 # reshape so that it is long ways and there is a column that indicates drought severity or no drought
 # make separate long dfs for anoms and residuals 
@@ -150,12 +155,21 @@ DTtoRast(coupling_slope_sig[,c(1,2)], anom_stk[[1]],paste0(home, "/Analysis/outp
 
 # calculate the % area that is significantly changing in coupling 
 percent_area_changing <- (nrow(coupling_slope_sig)/nrow(forest_mask1))*100
-# find that in 13.22% of the forested area the coupling between ET and SPI is changing. 
+# find that in 13.22% of the forested area the coupling between ET and SPI is changing.
+percent_area_changing_positive <- (nrow(coupling_slope_sig[coupling_slope_sig$senSlope > 0, ])/nrow(forest_mask1))*100  # 4.29
+percent_area_changing_negative <- (nrow(coupling_slope_sig[coupling_slope_sig$senSlope < 0, ])/nrow(forest_mask1))*100  # 8.93
 
 # bring in the 5 year rolling coupling and the overall coupling and convert overall coupling to raster 
 rollingCoupling <- fread(paste0(home, "/Analysis/outputs/MODIS/rollingCoupling/rollingCoupling.csv"))
-rollingCoupling <- rollingCoupling[rollingCoupling$cellnum %in% forest_mask1$cellnum,]
+rollingCoupling <- rollingCoupling[rollingCoupling$cellnum %in% forest_mask1$cellnum,] # only keep the ones that are forested 
 DTtoRast(rollingCoupling[,c("cellnum", "all")], anom_stk[[1]], 
                       paste0(home, "/Analysis/outputs/MODIS/rollingCoupling/overallCoupling.tif"), open = T)
 
 
+# calcualte the percent area that has a significant overall coupling 
+overall_coupling <- as.data.frame(raster(paste0(home, "/Analysis/outputs/MODIS/rollingCoupling/overallCoupling.tif")))
+overall_coupling_sig <- as.data.frame(overall_coupling[!is.na(overall_coupling$overallCoupling)==T,])
+colnames(overall_coupling_sig) <- "R"
+percent_area_coupled <- (nrow(overall_coupling_sig)/nrow(forest_mask1))*100  # % significant overall coupling = 46.179
+percent_area_coupled_positive <- (nrow(as.data.frame(overall_coupling_sig[overall_coupling_sig$R > 0, ]))/nrow(forest_mask1))*100  # 45.704%
+percent_area_coupled_negative <- (nrow(as.data.frame(overall_coupling_sig[overall_coupling_sig$R < 0, ]))/nrow(forest_mask1))*100  # 0.47%

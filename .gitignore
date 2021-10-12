@@ -19,6 +19,7 @@ Data/Topography/
 Analysis/outputs/
 Visualizing/**/*.csv
 Visualizing/**/**/*.csv
+Visualizing/figures/
 *.xlsx
 *.tif
 *.csv

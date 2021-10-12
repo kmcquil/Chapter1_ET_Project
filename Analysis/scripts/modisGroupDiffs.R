@@ -158,3 +158,15 @@ data <- merge(data, noDrought, by = "cellnum", all.x=T)
 fwrite(data, paste0(home, "/Analysis/outputs/MODIS/final_drought_attribute_dt.csv"))
 
 
+## Since we decided to use TWI instead of HAND at the last minute after all of the code for the steps after this had been written
+## I am just going to put TWI into the HAND column so I don't have to rewrite a bunch of other scripts to match the new variable name 
+data <- fread(paste0(home, "/Analysis/outputs/MODIS/final_drought_attribute_dt.csv"), na.strings = (""))
+twi=values(raster("G:/My Drive/Chapter1_ET_Project/Data/Topography/TWI/TWI_modis.tif"))
+twi <- data.table(twi=twi, 
+                  cellnum = seq(1, length(twi), 1))
+data[,HAND:=as.numeric(rep(NA, nrow(data)))]
+setkey(data, cellnum)
+setkey(twi, cellnum)
+data[twi, HAND:=twi]
+
+fwrite(data, paste0(home, "/Analysis/outputs/MODIS/final_drought_attribute_dt.csv"))

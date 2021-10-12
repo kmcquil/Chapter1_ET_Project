@@ -40,12 +40,18 @@ data$pctDiff_W_bin <- cut(data$pctDiff_W, breaks = pd_bins, labels = pd_names)
 e_bins <- c(199, seq(250, 2050, 50))
 e_names <- e_bins[1:length(e_bins)-1]
 data$elevation_bin <- cut(data$elevation, breaks = e_bins, labels = e_names)
+
 # create 10m bins of HAND
 # min is 0 and max is 592
 # so bins start at 0 and go to 600
-h_bins<- seq(0, 600, 10)
+# h_bins<- seq(0, 600, 10)
+# h_names <- h_bins[1:length(h_bins)-1]
+# data$HAND_bin <- cut(data$HAND, breaks = h_bins, labels = h_names)
+## WE ACUALLY CHANGED THIS TO TWI BUT THE VAR NAME IS STILL HAND 
+h_bins<- seq(5, 35, 1)
 h_names <- h_bins[1:length(h_bins)-1]
 data$HAND_bin <- cut(data$HAND, breaks = h_bins, labels = h_names)
+
 
 # reshape so that it is long ways and there is a column that indicates drought severity or no drought
 # make separate long dfs for anoms and residuals
@@ -106,8 +112,13 @@ agg_DF_XY(data, "pctDiff_R_bin", "sensAnoms", "/pctDiffR_sensAnoms.csv")
 
 # Calculate the percent of forested area with significant overall coupling and with a significant change in overall coupling
 percent_sensCoupling <- (sum(!is.na(data$sensCoupling))/nrow(data))*100  # 1.17%
+percent_sensCoupling_positive <- (sum(!is.na(data$sensCoupling) & data$sensCoupling>0)/nrow(data))*100 # 0.3254743
+percent_sensCoupling_negative <- (sum(!is.na(data$sensCoupling) & data$sensCoupling<0)/nrow(data))*100 #  0.8484882
+
 percent_overallCoupling <- (sum(!is.na(data$allCoupling))/nrow(data))*100  # 16.06%
-percent_sensAnoms <- (sum(!is.na(data$sensAnoms))/nrow(data))*100 # 3% 
+percent_overallCoupling_positive <- (sum(!is.na(data$allCoupling) & data$allCoupling>0)/nrow(data))*100 # 14.56378
+percent_overallCoupling_negative <- (sum(!is.na(data$allCoupling) & data$allCoupling<0)/nrow(data))*100 # 1.497039
+
 
 # get the average elevation across the landscape 
 landsat_elevation <- raster("G:/My Drive/Chapter1_ET_Project/Data/Topography/usgsNED_elevation/elevation30m.tif")
