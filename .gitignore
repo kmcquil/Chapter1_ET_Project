@@ -3,9 +3,6 @@ Figures/
 Data/ALEXI/
 Data/coweeta/
 
-
-
-
 Data/forest_composition/*
 !Data/forest_composition/Wilson_FC_SBR
 Data/forest_composition/Wilson_FC_SBR/*
@@ -24,6 +21,10 @@ Data/tl_2017_us_state/
 Data/Topography/
 Data/nhdPlus
 Data/Processing_scripts/landsat_lt_1.R
+Data/Processing_scripts/landsat_lt_2.R
+Data/Processing_scripts/landsat_lt_3.R
+
+
 
 Analysis/outputs/
 
