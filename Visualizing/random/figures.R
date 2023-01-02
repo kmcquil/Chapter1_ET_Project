@@ -13,6 +13,7 @@ library(rgdal)
 library(cowplot)
 library(ggpubr)
 home <- "G:/My Drive/Chapter1_ET_Project"
+home <- "/Volumes/GoogleDrive/My Drive/Chapter1_ET_Project"
 source(paste0(home, "/Visualizing/MODIS/helpers.R"))
 
 
@@ -20,7 +21,7 @@ source(paste0(home, "/Visualizing/MODIS/helpers.R"))
 #### Plot anomalies at drought peak for all, moderate, severe, and extreme droughts for MODIS and Landsat 
 #####################################################################################################################
 # Bring in the SBR shapefile to plot as outline of region on map 
-sbr <- readOGR("G:/My Drive/Chapter1_ET_Project/Data/NA_CEC_Eco_Level3/blue_ridge.shp")
+sbr <- readOGR(paste0(home, "/Data/NA_CEC_Eco_Level3/blue_ridge.shp"))
 
 # Stack MODIS anomalies at drought peak (all, moderate, severe, extreme)
 et_tifs_m <- list.files(paste0(home, "/Analysis/outputs/MODIS/compositeRasters"), full.names = T, pattern = ".tif$")
@@ -31,8 +32,9 @@ anom_stk_m <- do.call("stack", lapply(anom_tifs_m, raster))
 et_tifs_l <- list.files(paste0(home, "/Analysis/outputs/Landsat/compositeRasters"), full.names = T, pattern = ".tif$")
 anom_tifs_l <- et_tifs_l[grep("ETanom", et_tifs_l)]
 anom_stk_l <- do.call("stack", lapply(anom_tifs_l, raster))
-# Non-forested pixels haven't beens creened out of the .tifs yet for MODIS so do that here 
-forest_mask_landsat <- raster("G:/My Drive/Chapter1_ET_Project/Data/landcover/LANDSAT_FOREST/landsat_permanent_forest_resampled.tif")
+
+# Non-forested pixels haven't been screened out of the .tifs yet for MODIS so do that here 
+forest_mask_landsat <- raster(paste0(home, "/Data/landcover/LANDSAT_FOREST/landsat_permanent_forest_resampled.tif"))
 forest_mask_landsat[forest_mask_landsat == 0] <- NA
 anom_stk_l <- mask(anom_stk_l, forest_mask_landsat)
 
@@ -46,14 +48,16 @@ max_absolute_value=max(abs(c(quants[[1]], quants[[2]]))) #what is the maximum ab
 color_sequence=seq(-max_absolute_value,max_absolute_value,length.out=color_levels+1)
 
 # initiate the save to a .tif file for the full plot 
-tiff("G:/My Drive/Chapter1_ET_Project/Figures/figure_3.tiff", units="in", width=5.5, height=7, res=800)
+tiff("G:/My Drive/Chapter1_ET_Project/Figures/figure_3_revision.tiff", units="in", width=5.5, height=7, res=800)
 
 # plot the MODIS and then Landsat maps without a legend 
 par(mfrow = c(4,2), mai = c(0, 0.25, 0.2, 0), omi=c(0.05,0,0,1))
+
 #all
 image(anom_stk_m[[1]], col=col5(n=color_levels), breaks=color_sequence, zlim = c(quants[[1]], quants[[2]]), legend=FALSE, box = F, axes=F)
 mtext(side = 3, line = 0, "MODIS", cex=1)
-mtext(side = 2, line = 0.2,  "All", cex = 1)plot(sbr, add = T)
+mtext(side = 2, line = 0.2,  "All", cex = 1)
+plot(sbr, add = T)
 image(anom_stk_l[[1]], col=col5(n=color_levels), breaks=color_sequence, zlim = c(quants[[1]], quants[[2]]), legend=FALSE, axes=F, box = F)
 mtext(side = 3, line = 0, "Landsat", cex=1)
 plot(sbr, add = T)
@@ -85,7 +89,7 @@ plot(anom_stk_m[[1]], legend.only=TRUE, legend.shrink=1, legend.width=1,
      zlim=c(quants[[1]], quants[[2]]),
      col=col5(n=color_levels), breaks=color_sequence,
      axis.args=list(at=pretty(quants[[1]]:quants[[2]]), font = 1,cex = 1, labels=pretty(quants[[1]]:quants[[2]])),
-     legend.args=list(text='', side=4, font=1, line=2.3))
+     legend.args=list(text='+/-1 2 SD', side=4, font=1, line=2.3))
 
 dev.off()
 
@@ -97,19 +101,23 @@ TWI <- raster(paste0(home, "/Data/Topography/TWI/TWI_landsat.tif"))
 pctDiffR <- raster(paste0(home, "/Data/forest_composition/riley_landsat_diffuse_percent.tif"))
 pctDiffR <- pctDiffR*100 # convert from decimal to percent to match other figures 
 
+#TWIvis <- TWI
+#TWIvis[TWIvis>20] <- 15
+#plot(TWIvis, col=viridis(100), axes=F, box=F, legend.width=1)
+
 # function to add a label to each sub plot 
 add_label_legend <- function(x, y, label, ...) {
   legend(x,y, label, bty = "n", ...)
 }
 
-tiff("G:/My Drive/Chapter1_ET_Project/Figures/figure_S2.tiff", units="in", width=7, height=3, res=800)
+tiff("G:/My Drive/Chapter1_ET_Project/Figures/FigS2.tiff", units="in", width=6.85, height=3, res=800)
 par(mfrow = c(1,3), mai = c(0, 0.2, 0, 0.2), omi=c(0,0.1,0,0.1))
 plot(elevation, col = viridis(100), axes=F, box = F, legend.width = 1.5)
-add_label_legend(90500, 4180565, "A", cex = 1.25, text.font = 2)
+add_label_legend(90500, 4180565, "a", cex = 1.25, text.font = 2)
 plot(TWI, col = viridis(100), axes=F, box = F, legend.width = 1.5)
-add_label_legend(90500, 4180565, "B", cex = 1.25, text.font = 2)
+add_label_legend(90500, 4180565, "b", cex = 1.25, text.font = 2)
 plot(pctDiffR, col = viridis(100), axes=F, box = F, legend.width = 1.5)
-add_label_legend(90500, 4180565, "C", cex = 1.25, text.font = 2)
+add_label_legend(90500, 4180565, "c", cex = 1.25, text.font = 2)
 dev.off()
 
 
@@ -123,9 +131,9 @@ landsat_files <- list.files(paste0(home, "/Visualizing/Landsat/"), full.names=T,
 landsat_files <- landsat_files[grep("pct_greater0", landsat_files)]
 
 # bring together the first file for landsat and modis to plot the % of anomalies greater than 0 
-pg0_l <- fread(landsat_files[1])
+pg0_l <- fread(landsat_files[4])
 pg0_l$sensor <- rep("Landsat", 5)
-pg0_m <- fread(modis_files[1])
+pg0_m <- fread(modis_files[4])
 pg0_m$sensor <- rep("MODIS", 5)
 pg0 <- setDT(rbind(pg0_l, pg0_m))
 pg0$DroughtSeverity <- factor(pg0$DroughtSeverity, ordered=TRUE, 
@@ -151,6 +159,22 @@ ggplot(pg0_sub, aes(x = DroughtSeverity, y = pg0, fill = sensor)) +
   
 dev.off()
 
+tiff("/Users/katiemcquillan/Desktop/all_droughts.png", units='in', width=7, height=6, res=400)
+ggplot(pg0_sub[pg0_sub$sensor=="MODIS",], aes(x = DroughtSeverity, y = pg0, fill = sensor)) + 
+  geom_bar(stat="identity", position=position_dodge()) + 
+  scale_color_manual(values = '#053061')+
+  scale_fill_manual(values = '#053061')+
+  theme_classic()+
+  xlab("Drought Severity") + 
+  ylab("% Forest Area Increasing Forest Water Use") +
+  theme(legend.position = "none")+
+  #theme(axis.text=element_text(size=12, color = 'black'),
+  #      axis.title=element_text(size=12, face ='bold')) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 65))
+
+dev.off()
+
+
 #################################################################################################################
 ## Make plots of the binned overall correlation and the binned trend 
 ## across elevation, HAND, and % diffuse porous gradients for MODIS and Landsat 
@@ -175,7 +199,7 @@ elev_correlation <- ggplot(data =elev_corr_in[[1]], aes(x=elevation_bin, y = mea
   theme(axis.text=element_text(size=12, color = 'black'),
         axis.title=element_text(size=12,face="bold")) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.25, hjust=1))+ 
-  annotate("text", x = 725, y = c(-0.3, -0.45), label = c(elev_corr_in[[2]], elev_corr_in[[3]]))
+  annotate("text", x = 800, y = c(-0.3, -0.45), label = c(elev_corr_in[[2]], elev_corr_in[[3]]))
   
 
 ### now do HAND ---- really TWI 
@@ -194,7 +218,7 @@ hand_correlation <- ggplot(data = hand_corr_in[[1]], aes(x=HAND_bin, y = meanAno
   theme(axis.text=element_text(size=12, color = 'black'),
         axis.title=element_text(size=12,face="bold")) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.25, hjust=1)) + 
-  annotate("text", x = 20, y = c(0, 0.05), label = c(hand_corr_in[[2]], hand_corr_in[[3]]))
+  annotate("text", x = 12.5, y = c(0, 0.05), label = c(hand_corr_in[[2]], hand_corr_in[[3]]))
 
 ### now do percent diffuse porous 
 diff_corr_in <- prep(paste0(dir_m, "/pctDiffR_allCoupling.csv"), paste0(dir_l, "/pctDiffR_allCoupling.csv"), "pctDiff_R_bin")
@@ -212,7 +236,7 @@ diff_correlation <- ggplot(data = diff_corr_in[[1]], aes(x=pctDiff_R_bin, y = me
   theme(axis.text=element_text(size=12, color = 'black'),
         axis.title=element_text(size=12,face="bold")) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.25, hjust=1)) + 
-  annotate("text", x = 25, y = c(-0.05, -0.12), label = c(diff_corr_in[[2]], diff_corr_in[[3]]))
+  annotate("text", x = 32, y = c(-0.05, -0.12), label = c(diff_corr_in[[2]], diff_corr_in[[3]]))
 
 
 # start the sen's slope plots 
@@ -231,7 +255,7 @@ elev_trend <- ggplot(data = elev_trend_in[[1]], aes(x=elevation_bin, y = meanAno
   theme(axis.text=element_text(size=12, color = 'black'),
         axis.title=element_text(size=12,face="bold")) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.25, hjust=1))+ 
-  annotate("text", x = 600, y = c(-0.02, -0.028), label = c(elev_trend_in[[2]], elev_trend_in[[3]]))
+  annotate("text", x = 700, y = c(-0.02, -0.028), label = c(elev_trend_in[[2]], elev_trend_in[[3]]))
 
 
 
@@ -251,7 +275,7 @@ hand_trend <- ggplot(data = hand_trend_in[[1]], aes(x=HAND_bin, y = meanAnom, gr
   theme(axis.text=element_text(size=12, color = 'black'),
         axis.title=element_text(size=12,face="bold")) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.25, hjust=1))+ 
-  annotate("text", x = 20, y = c(-0.018, -0.022), label = c(hand_trend_in[[2]], hand_trend_in[[3]]))
+  annotate("text", x = 11.75, y = c(-0.018, -0.022), label = c(hand_trend_in[[2]], hand_trend_in[[3]]))
 
 
 ### next do % diffuse porous 
@@ -270,7 +294,7 @@ diff_trend <- ggplot(data = diff_trend_in[[1]], aes(x=pctDiff_R_bin, y = meanAno
   theme(axis.text=element_text(size=12, color = 'black'),
         axis.title=element_text(size=12,face="bold")) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.25, hjust=1)) + 
-  annotate("text", x = 25, y = c(-0.023, -0.029), label = c(diff_trend_in[[2]], diff_trend_in[[3]]))
+  annotate("text", x = 32, y = c(-0.023, -0.029), label = c(diff_trend_in[[2]], diff_trend_in[[3]]))
 
 ## make a plot with just the legend -- no plot 
 legend <- ggplot(data = diff_trend_in[[1]], aes(x=pctDiff_R_bin, y = meanAnom, group = Sensor)) + 
@@ -291,11 +315,13 @@ legend <- ggplot(data = diff_trend_in[[1]], aes(x=pctDiff_R_bin, y = meanAnom, g
   annotate("text", x = 25, y = c(-0.023, -0.029), label = c(diff_trend_in[[2]], diff_trend_in[[3]]))
 legend <- ggpubr::get_legend(legend)
 
-tiff("G:/My Drive/Chapter1_ET_Project/Figures/figure_7.tiff", units="in", width=8, height=8, res=800)
+#tiff("G:/My Drive/Chapter1_ET_Project/Figures/figure_6.tiff", units="in", width=8, height=8, res=800)
+tiff("G:/My Drive/Chapter1_ET_Project/Figures/Fig6.tiff", units="in", width=6.85, height=7, res=800)
+
 ggarrange(elev_correlation, elev_trend, 
           hand_correlation, hand_trend, 
           diff_correlation, diff_trend, 
-          labels = "AUTO", nrow = 3, ncol = 2, 
+          labels = "auto", nrow = 3, ncol = 2, 
           common.legend = TRUE, 
           legend.grob = legend,
           legend = "bottom")
@@ -318,27 +344,27 @@ m_h <- contPlots_1(paste0(dir_m, "/HAND_DS.csv"), "HAND_bin", "DroughtSeverity",
 # Add the sen's slope of M, S, and E drought with a * for < 0.05 and ** < 0.01, and *** < 0.001
 # do elevation first for MODIS and Landsat 
 le_labels <- makeLabels(l_e[[2]])
-LE <- l_e[[1]] + annotate("text", x = 1500, y = c(-0.61, -0.85, -1.07), label = le_labels)
+LE <- l_e[[1]] + annotate("text", x = 1375, y = c(-0.61, -0.85, -1.07), label = le_labels)
 me_labels <- makeLabels(m_e[[2]])
-ME <- m_e[[1]] + annotate("text", x = 1250, y = c(-1, -1.2, -1.4), label = me_labels)
+ME <- m_e[[1]] + annotate("text", x = 1200, y = c(-1, -1.2, -1.4), label = me_labels)
 
 # Next do Hand 
 lh_labels <- makeLabels(l_h[[2]])
-LH <- l_h[[1]] + annotate("text", x = 20, y = c(-0.55, -0.75, -0.95), label = lh_labels)
+LH <- l_h[[1]] + annotate("text", x = 19, y = c(-0.55, -0.75, -0.95), label = lh_labels)
 mh_labels <- makeLabels(m_h[[2]])
-MH <- m_h[[1]] + annotate("text", x = 11, y = c(-0.9, -1.06, -1.22), label = mh_labels)
+MH <- m_h[[1]] + annotate("text", x = 10.5, y = c(-0.9, -1.06, -1.22), label = mh_labels)
 
 
 # Finally do % Diff porous BA
 ld_labels <- makeLabels(l_d[[2]])
-LD <- l_d[[1]] + annotate("text", x = 70, y = c(-0.3, -0.45, -0.60), label = ld_labels)
+LD <- l_d[[1]] + annotate("text", x = 60, y = c(-0.3, -0.45, -0.60), label = ld_labels)
 md_labels <- makeLabels(m_d[[2]])
 MD <- m_d[[1]] + annotate("text", x = 55, y = c(-0.9, -1.1, -1.3), label = md_labels)
 
 m_h_legend <- contPlots_legend(paste0(dir_m, "/HAND_DS.csv"), "HAND_bin", "DroughtSeverity", "HAND (m)")
 m_h_legend <- ggpubr::get_legend(m_h_legend)
 
-tiff("G:/My Drive/Chapter1_ET_Project/Figures/figure_5.tiff", units="in", width=9, height=7, res=800)
+tiff("G:/My Drive/Chapter1_ET_Project/Figures/Fig5.tiff", units="in", width=6.85, height=7, res=800)
 ggarrange(ME, LE,  
           MH, LH, 
           MD, LD,
@@ -346,7 +372,7 @@ ggarrange(ME, LE,
           common.legend = TRUE, 
           legend.grob = m_h_legend,
           legend="bottom", 
-          labels = "AUTO")
+          labels = "auto")
 dev.off()
 
 
@@ -371,7 +397,7 @@ perc_df$class <- ordered(perc_df$class, levels = c("Positive", "Negative", "Non-
 # make a bar plot where each bar is broken into a percentage corresponding to non-significant , positive, or negative 
 pal <- c("#30678D","#36B677", "#440154")
 
-tiff("G:/My Drive/Chapter1_ET_Project/Figures/figure_6.tiff", units="in", width=9, height=7, res=800)
+tiff("G:/My Drive/Chapter1_ET_Project/Figures/figure_percent_area.tiff", units="in", width=9, height=7, res=800)
 ggplot(perc_df, aes(fill = class, y = value, x = sensor)) + 
   geom_bar(position = "stack", stat = "identity") + 
   scale_fill_manual(values = pal)+
@@ -421,7 +447,7 @@ for(i in 1:nrow(spi_new)){
 }
 
 spi_new_gs <- spi_new[month(date) > 3 & month(date) < 10,]
-tiff("G:/My Drive/Chapter1_ET_Project/Figures/figure_2.tiff", units="in", width=8, height=5, res=800)
+tiff("G:/My Drive/Chapter1_ET_Project/Figures/Fig2.tiff", units="in", width=6.85, height=5, res=800)
 ggplot(spi_new_gs, aes(x = date, y = mean, ymax = sd_above, ymin = sd_below))+ 
   geom_line(color="black", size = 0.55) + 
   geom_ribbon(alpha=0.5, color = NA, fill = "#800026", size = 1.5) + 

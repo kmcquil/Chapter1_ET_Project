@@ -11,6 +11,7 @@ library(Metrics)
 library(ggplot2)
 
 home <- "G:/My Drive/Chapter1_ET_Project" # set home directory 
+#home <- "/Volumes/GoogleDrive/My Drive/Chapter1_ET_Project"
 
 # function to calculate R2, slope, MAE, RMSE, RE (%) where RE = MAE/mean(observed) and return as a data.table
 metrics_fun <- function(observed, predicted, time){
@@ -28,6 +29,7 @@ metrics_fun <- function(observed, predicted, time){
 
 # bring in data frame with the coweeta daily ET calculated from the flux tower 
 ec_et <- fread("G:/My Drive/Dissertation/ameriflux/et_mod_obs_df.csv")
+#ec_et <- fread("/Volumes/GoogleDrive/My Drive/Dissertation/ameriflux/et_mod_obs_df.csv")
 ec_et <- ec_et[V1 >= as.Date("2011-01-01") & V1 < as.Date("2016-01-01")]
 
 # bring in the coweeta flux tower point 
@@ -55,6 +57,7 @@ et_df <- et_df[start_date >= as.Date("2011-01-01") & end_date < as.Date("2016-01
 # the flux tower sits towards the upper right of the MODIS pixel. 
 # add a 300m buffer around the flux tower and use that to extract the average MODIS value 
 cwt_buff <- buffer(cwt, 300)
+#cwt_buff <- buffer(cwt, 500)
 
 for(i in 1:nrow(et_df)){
   et_df$MODIS_ET[i] <- raster::extract(raster(et_df$file[i]), cwt_buff, fun = mean, na.rm=T, df=T)[1,2]
@@ -67,6 +70,7 @@ for(i in 1:nrow(et_df)){
 
 # calculate validation metrics for the 8-day MODIS ET 
 Mod8day <- metrics_fun(et_df$OBS_ET, et_df$MODIS_ET, "8Day")
+#Mod8day500 <- metrics_fun(et_df$OBS_ET, et_df$MODIS_ET, "8Day")
 
 # calculate monthly average ET and get validation metrics for that aggregation as well  
 monthly_et_df <- et_df[, .(MODIS_ET_avg = mean(MODIS_ET), OBS_ET_avg = mean(OBS_ET)), .(year(start_date), month(start_date))]
@@ -108,6 +112,7 @@ abline(0, 1, col = "#d73027", lty=2, lwd=3)
 
 # Do the same thing for the Landsat data
 ec_et <- fread("G:/My Drive/Dissertation/ameriflux/et_mod_obs_df.csv")
+#ec_et <- fread("/Volumes/GoogleDrive/Dissertation/ameriflux/et_mod_obs_df.csv")
 ec_et <- ec_et[V1 >= as.Date("2011-01-01") & V1 < as.Date("2016-01-01")]
 
 landsat_tifs <- list.files(paste0(home, "/Data/Landsat_ET/tifs_resampled"), full.names=T, pattern = ".tif$")

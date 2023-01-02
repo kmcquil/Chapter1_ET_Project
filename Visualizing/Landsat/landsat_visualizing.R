@@ -9,6 +9,7 @@ library(parallel)
 
 home <- "/share/klmarti3/kmcquil/Chapter1_ET_Project"
 cores <- detectCores() - 1
+source(paste0(home, "/Visualizing/MODIS/helpers.R"))
 data <- fread(paste0(home, "/Analysis/outputs/Landsat/final_drought_attribute_dt.csv"), na.strings = (""), nThread = cores)
 
 # factorize the Fc, hand classifications, and elevation classifications
@@ -48,7 +49,7 @@ data$elevation_bin <- cut(data$elevation, breaks = e_bins, labels = e_names)
 # h_names <- h_bins[1:length(h_bins)-1]
 # data$HAND_bin <- cut(data$HAND, breaks = h_bins, labels = h_names)
 ## WE ACUALLY CHANGED THIS TO TWI BUT THE VAR NAME IS STILL HAND 
-h_bins<- seq(5, 35, 1)
+h_bins<- seq(5, 35, 0.5)
 h_names <- h_bins[1:length(h_bins)-1]
 data$HAND_bin <- cut(data$HAND, breaks = h_bins, labels = h_names)
 
@@ -119,13 +120,21 @@ percent_overallCoupling <- (sum(!is.na(data$allCoupling))/nrow(data))*100  # 16.
 percent_overallCoupling_positive <- (sum(!is.na(data$allCoupling) & data$allCoupling>0)/nrow(data))*100 # 14.56378
 percent_overallCoupling_negative <- (sum(!is.na(data$allCoupling) & data$allCoupling<0)/nrow(data))*100 # 1.497039
 
+# new 2/27 -- percent and acres that are becoming less constrained 
+nrow(data[(data$sensCoupling > 0 & !is.na(data$sensCoupling) & data$allCoupling <0) | 
+            (data$sensCoupling < 0 & !is.na(data$sensCoupling) & data$allCoupling > 0),])/nrow(data) * 100 
+
+nrow(data[(data$sensCoupling > 0 & !is.na(data$sensCoupling) & data$allCoupling <0) | 
+            (data$sensCoupling < 0 & !is.na(data$sensCoupling) & data$allCoupling > 0),]) * 30 * 30 * 0.000247105
+
+
 
 # get the average elevation across the landscape 
-landsat_elevation <- raster("G:/My Drive/Chapter1_ET_Project/Data/Topography/usgsNED_elevation/elevation30m.tif")
+landsat_elevation <- raster(paste0(home, "/Data/Topography/usgsNED_elevation/elevation30m.tif"))
 meanElevation <- mean(values(landsat_elevation), na.rm=T)
 
 # Quantify the percent forested area of the landscape 
-landsat_forest <- raster("G:/My Drive/Chapter1_ET_Project/Data/landcover/LANDSAT_FOREST/landsat_permanent_forest_resampled.tif")
+landsat_forest <- raster(paste0(home, "/Data/landcover/LANDSAT_FOREST/landsat_permanent_forest_resampled.tif"))
 v_lf <- values(landsat_forest)
 cell0 <- length(v_lf[v_lf == 0 & !is.na(v_lf) ==T])
 cell1 <- length(v_lf[v_lf == 1 & !is.na(v_lf) ==T])
@@ -137,5 +146,38 @@ avg_forest <- cell1/(cell0 + cell1)
 ## And then further break that down across elevation gradient, HAND gradient, and % diff porous 
 #############################################################################################################
 pct_greater_0(data_long, home, "Landsat")
+
+
+
+
+
+#######################################################################################################################
+# Calculate the percent of forested pixels in each 50m elevation bin and 0.5 TWI bin 
+# Calculate the cumulative percentage of the area as elevation/TWI bin increases 
+total <- nrow(data)
+percent_forest_binned_elevation <- data[order(elevation_bin),.(percent_of_forest = (.N/total)*100), elevation_bin]
+percent_forest_binned_elevation$cummulative <- cumsum(percent_forest_binned_elevation$percent_of_forest)
+percent_forest_binned_elevation <- percent_forest_binned_elevation[complete.cases(percent_forest_binned_elevation),]
+percent_forest_binned_elevation$elevation_bin <- as.numeric(as.character(percent_forest_binned_elevation$elevation_bin))
+fwrite(percent_forest_binned_elevation, paste0(home, "/Analysis/outputs/Landsat/forested_area_by_elevation.csv"))
+
+landsat_elev <- fread(paste0(home, "/Analysis/outputs/Landsat/forested_area_by_elevation.csv"))
+landsat_elev$sensor <- rep("Landsat", nrow(landsat_elev))
+sum(landsat_elev[elevation_bin<500, percent_of_forest])
+sum(landsat_elev[elevation_bin>=1000, percent_of_forest])
+sum(landsat_elev[elevation_bin>=500 & elevation_bin<1000, percent_of_forest])
+
+# TWI
+pfbt <- data[order(HAND_bin), .(percent_forest = (.N/total)*100), HAND_bin]
+pfbt$cummulative <- cumsum(pfbt$percent_forest)
+pfbt <- pfbt[complete.cases(pfbt),]
+pfbt$HAND_bin <- as.numeric(as.character(pfbt$HAND_bin))
+fwrite(pfbt, paste0(home, "/Analysis/outputs/Landsat/forested_area_by_TWI.csv"))
+
+landsat_TWI <- fread(paste0(home, "/Analysis/outputs/Landsat/forested_area_by_TWI.csv"))
+landsat_TWI$sensor <- rep("Landsat", nrow(landsat_TWI))
+sum(landsat_TWI[HAND_bin <=7.5,]$percent_forest)
+sum(landsat_TWI[HAND_bin >=10,]$percent_forest)
+sum(landsat_TWI[HAND_bin >=10,]$percent_forest)
 
 

@@ -11,6 +11,7 @@ library(RColorBrewer)
 library(parallel)
 
 home <- "G:/My Drive/Chapter1_ET_Project"
+home <- "/Volumes/GoogleDrive/My Drive/Chapter1_ET_Project"
 source(paste0(home, "/Visualizing/MODIS/helpers.R"))
 
 #######################################################################################################
@@ -104,6 +105,7 @@ agg_DF_m(data_long_sub, "pctDiff_R_bin", "DroughtSeverity", "/pctDiffR_DS.csv")
 ## Calculate average binned overall coupling and sen's slope of rolling coupling across evironmental gradients
 ##############################################################################################################
 forest_mask <- as.data.frame(raster("G:/My Drive/Chapter1_ET_Project/Data/landcover/MODIS_FOREST/modis_permanent_forest_resampled.tif"))
+#forest_mask <- as.data.frame(raster("/Volumes/GoogleDrive/My Drive/Chapter1_ET_Project/Data/landcover/MODIS_FOREST/modis_permanent_forest_resampled.tif"))
 forest_mask <- cbind(seq(1, nrow(forest_mask)), forest_mask)
 colnames(forest_mask) <- c("cellnum", "fmask")
 forest_mask1 <- forest_mask[forest_mask$fmask== 1 & !is.na(forest_mask$fmask),]
@@ -142,6 +144,7 @@ anom_stk <- do.call("stack", lapply(anom_tifs_m, raster))
 
 # bring this in to make sure everything was masked to only forested pixels 
 forest_mask <- as.data.frame(raster("G:/My Drive/Chapter1_ET_Project/Data/landcover/MODIS_FOREST/modis_permanent_forest_resampled.tif"))
+#forest_mask <- as.data.frame(raster(paste0(home, "/Data/landcover/MODIS_FOREST/modis_permanent_forest_resampled.tif")))
 forest_mask <- cbind(seq(1, nrow(forest_mask)), forest_mask)
 colnames(forest_mask) <- c("cellnum", "fmask")
 forest_mask1 <- forest_mask[forest_mask$fmask== 1 & !is.na(forest_mask$fmask),]
@@ -173,3 +176,73 @@ colnames(overall_coupling_sig) <- "R"
 percent_area_coupled <- (nrow(overall_coupling_sig)/nrow(forest_mask1))*100  # % significant overall coupling = 46.179
 percent_area_coupled_positive <- (nrow(as.data.frame(overall_coupling_sig[overall_coupling_sig$R > 0, ]))/nrow(forest_mask1))*100  # 45.704%
 percent_area_coupled_negative <- (nrow(as.data.frame(overall_coupling_sig[overall_coupling_sig$R < 0, ]))/nrow(forest_mask1))*100  # 0.47%
+
+
+## new 2/27
+# calculate the percent area that is significantly coupled positive and becoming less positive and the 
+# area that is negative coupled and is becoming less negative 
+overall_coupling$cellnum <- seq(1:nrow(overall_coupling))
+overall_coupling_sig <- as.data.frame(overall_coupling[!is.na(overall_coupling$overallCoupling)==T,])
+
+errthang <- merge(overall_coupling_sig, coupling_slope_sig, by="cellnum")
+#becoming less constrained
+nrow(errthang[(errthang$overallCoupling>0 & errthang$senSlope<0) | (errthang$overallCoupling<0 & errthang$senSlope>0),])/nrow(forest_mask1)*100  # 6.2%
+
+# get area in acres 
+(nrow(errthang[(errthang$overallCoupling>0 & errthang$senSlope<0) | (errthang$overallCoupling<0 & errthang$senSlope>0),]) * 635 * 635) * 0.000247105
+
+# becoming more constrained 
+nrow(errthang[(errthang$overallCoupling<0 & errthang$senSlope<0) | (errthang$overallCoupling>0 & errthang$senSlope>0),])/nrow(forest_mask1)*100  #3.8% 
+
+#######################################################################################################################
+# calculate the min, max, and mean of the percent diffuse porous basal area for MODIS and Landsat resolution products
+landsat_diff <- raster(paste0(home, "Data/forest_composition/riley_landsat_diffuse_percent.tif"))
+modis_diff <- raster(paste0(home, "Data/forest_composition/riley_modis_diffuse_percent.tif"))
+
+landsat_values <- values(landsat_diff)
+min(landsat_values, na.rm=T)
+max(landsat_values, na.rm=T)
+mean(landsat_values, na.rm=T)
+
+modis_values <- values(modis_diff)
+min(modis_values, na.rm=T)
+max(modis_values, na.rm=T)
+mean(modis_values, na.rm=T)
+
+
+
+
+#######################################################################################################################
+# Calculate the percent of forested pixels in each 50m elevation bin and 0.5 TWI bin 
+# Calculate the cumulative percentage of the area as elevation bin increases 
+data<- fread(paste0(home, "Analysis/Outputs/MODIS/final_drought_attribute_dt.csv"))
+total <- nrow(data)
+percent_forest_binned_elevation <- data[order(elevation_bin),.(percent_of_forest = (.N/total)*100), elevation_bin]
+percent_forest_binned_elevation$cummulative <- cumsum(percent_forest_binned_elevation$percent_of_forest)
+percent_forest_binned_elevation <- percent_forest_binned_elevation[complete.cases(percent_forest_binned_elevation),]
+percent_forest_binned_elevation$elevation_bin <- as.numeric(as.character(percent_forest_binned_elevation$elevation_bin))
+fwrite(percent_forest_binned_elevation, paste0(home, "/Analysis/outputs/MODIS/forested_area_by_elevation.csv"))
+
+modis_elev <- fread(paste0(home, "/Analysis/outputs/MODIS/forested_area_by_elevation.csv"))
+modis_elev$sensor <- rep("MODIS", nrow(modis_elev))
+sum(modis_elev[elevation_bin<500, percent_of_forest])
+sum(modis_elev[elevation_bin>=1000, percent_of_forest])
+sum(modis_elev[elevation_bin>=500 & elevation_bin<1000, percent_of_forest])
+
+# TWI 
+pfbt <- data[order(HAND_bin), .(percent_forest = (.N/total)*100), HAND_bin]
+pfbt$cummulative <- cumsum(pfbt$percent_forest)
+pfbt <- pfbt[complete.cases(pfbt),]
+pfbt$HAND_bin <- as.numeric(as.character(pfbt$HAND_bin))
+fwrite(pfbt, paste0(home, "/Analysis/outputs/MODIS/forested_area_by_TWI.csv"))
+
+modis_TWI <- fread(paste0(home, "/Analysis/outputs/MODIS/forested_area_by_TWI.csv"))
+modis_TWI$sensor <- rep("MODIS", nrow(modis_TWI))
+sum(modis_TWI[HAND_bin < 9,]$percent_forest)
+sum(modis_TWI[HAND_bin >=9 & HAND_bin < 10,]$percent_forest)
+sum(modis_TWI[HAND_bin >=10,]$percent_forest)
+
+
+
+
+

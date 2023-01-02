@@ -49,7 +49,7 @@ add_label_legend <- function(x, y, label, ...) {
 }
 
 # plot the difference in percent diffuse porous BA. Add the legend last
-tiff("G:/My Drive/Chapter1_ET_Project/Figures/figure_S1.tiff", units="in", width=5.5, height=9, res=800)
+tiff("G:/My Drive/Chapter1_ET_Project/Figures/FigS1.tiff", units="in", width=5.5, height=9, res=800)
 par(mfrow = c(2,1), mai = c(0, 0, 0, 0))
 plot(d_diff, col=col5(n=color_levels), breaks=color_sequence, 
      axis.args=list(at=pretty(quants[[1]]:quants[[2]]), labels=pretty(quants[[1]]:quants[[2]])), 
@@ -59,7 +59,7 @@ plot(d_diff, col=col5(n=color_levels), breaks=color_sequence,
      font = 2,
      font.lab = 2)
 plot(sbr, add = T)
-add_label_legend(180000, 4120000, "A", cex = 1.25, text.font = 2)
+add_label_legend(180000, 4120000, "a", cex = 1.25, text.font = 2)
 
 par(mai=c(0,2, 0.3, 0),new = F)# add the legend 
 plot(d_diff, legend.only=TRUE, legend.shrink=0.9, legend.width=1, 
@@ -76,7 +76,7 @@ hist(values(d_diff), xlab = "Wilson % BA - Riley % BA", ylab = "",main = "", col
      cex.axis=1, 
      font = 1,
      font.lab = 1)
-add_label_legend(-60, 95000, "B", cex = 1.25, text.font = 2)
+add_label_legend(-60, 95000, "b", cex = 1.25, text.font = 2)
 
 dev.off()
 

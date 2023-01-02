@@ -1,6 +1,11 @@
 Figures/
+
 Data/ALEXI/
 Data/coweeta/
+
+
+
+
 Data/forest_composition/*
 !Data/forest_composition/Wilson_FC_SBR
 Data/forest_composition/Wilson_FC_SBR/*
@@ -8,6 +13,7 @@ Data/forest_composition/Wilson_FC_SBR/*
 !Data/forest_composition/Riley_FC_SBR
 Data/forest_composition/Riley_FC_SBR/*
 !Data/forest_composition/Riley_FC_SBR/FC_classification_sbr_riley.R
+
 Data/gis/
 Data/landcover/
 Data/Landsat_ET/
@@ -16,10 +22,15 @@ Data/NA_CEC_Eco_Level3/
 Data/SPI/
 Data/tl_2017_us_state/
 Data/Topography/
+Data/nhdPlus
+Data/Processing_scripts/landsat_lt_1.R
+
 Analysis/outputs/
-Visualizing/**/*.csv
-Visualizing/**/**/*.csv
-Visualizing/figures/
+
+
+Visualizing/
+
+
 *.xlsx
 *.tif
 *.csv
@@ -27,3 +38,4 @@ Visualizing/figures/
 *.xml
 *.gslides
 *.csh
+
