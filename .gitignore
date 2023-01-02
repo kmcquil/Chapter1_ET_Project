@@ -23,7 +23,12 @@ Data/nhdPlus
 Data/Processing_scripts/landsat_lt_1.R
 Data/Processing_scripts/landsat_lt_2.R
 Data/Processing_scripts/landsat_lt_3.R
-
+Data/Processing_scripts/landsat_lt_4.R
+Data/Processing_scripts/landsat_lt_5.R
+Data/Processing_scripts/landsat_lt_6.R
+Data/Processing_scripts/landsat_lt_7.R
+Data/Processing_scripts/landsat_lt_8.R
+Data/Processing_scripts/landsat_lt_9.R
 
 
 Analysis/outputs/
